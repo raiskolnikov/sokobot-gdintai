@@ -28,6 +28,25 @@ class SokoBot:
 
         return walls, targets, crates, player
 
+    def getHeursitic(self, width, height, crateX, crateY,
+                     targetX, targetY, itemsData):
+        #Calculates a heuristic value based on a set formula
+        # using the current position of a box to a target
+
+        #Calculate the X and Y distance between a crate and a target
+        hX = abs(targetX - crateX)
+        hY = abs(targetY - crateY)
+
+        #Get the number of crates "n"
+        n = 0
+        for row in range(height):
+            for col in range(width):
+                if itemsData[row][col] == "$" or itemsData[row][col] == "*":
+                    n += 1
+
+        h = (hX + hY) + n
+
+        return h
 
     def solveSokobanPuzzle(self, width, height, mapData, itemsData):
         # YOU NEED TO REWRITE THE IMPLEMENTATION OF THIS METHOD TO MAKE THE BOT SMARTER
@@ -57,6 +76,8 @@ class SokoBot:
 
         print("Player:", player)
         print("BFS reachable:", sorted(BFS(player, crates)))
+
+
 
         try:
             time.sleep(3)
