@@ -28,7 +28,7 @@ class SokoBot:
 
         return walls, targets, crates, player
 
-    def getHeursitic(self, width, height, crateX, crateY,
+    def getHeursitic(width, height, crateX, crateY,
                      targetX, targetY, itemsData):
         #Calculates a heuristic value based on a set formula
         # using the current position of a box to a target
@@ -47,6 +47,30 @@ class SokoBot:
         h = (hX + hY) + n
 
         return h
+        
+    def choosePriorityCrate(self, width, height, crateX, crateY, targetX, targetY, itemsData):
+        #this helper function will help the bot choose the correct crate
+        #looks for the crate with the smallest heuristic value among the crate
+
+        bestCrate = None
+        bestValue = float("inf")
+
+        for each crate:
+
+            smallestHeuristic = float("inf")
+
+            for each target:
+
+                heuristic = self.getHeuristic(width, height, crateX, crateY, targetX, targetY, itemsData)
+
+                if heuristic < smallestHeuristic:
+                    smallestHeuristic = heuristic
+
+            if smallestHeuristic < bestValue:
+                bestValue = smallestHeuristic
+                bestCrate = crate
+
+        return bestCrate
 
     def solveSokobanPuzzle(self, width, height, mapData, itemsData):
         # YOU NEED TO REWRITE THE IMPLEMENTATION OF THIS METHOD TO MAKE THE BOT SMARTER
