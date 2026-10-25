@@ -72,6 +72,46 @@ class SokoBot:
 
         return bestCrate
 
+    def aStarSearch(self, width, height, mapData, itemsData):
+        #this function will implement the A* search algorithm to find the best path to move a crate to a target
+        #it will return the path as a string of directions
+
+        #initialize the open and closed lists
+        openList = []
+        closedList = set()
+
+        #get the coordinates of the player, crates, and targets
+        walls, targets, crates, player = self.getCoordinates(width, height, mapData, itemsData)
+
+        #choose the priority crate to move
+        priorityCrate = self.choosePriorityCrate(width, height, crateX, crateY, targetX, targetY, itemsData)
+
+        #initialize the starting node
+        startNode = (player, priorityCrate)
+        openList.append(startNode)
+
+        while openList:
+            #get the node with the lowest f value
+            currentNode = min(openList, key=lambda x: self.getHeuristic(width, height, x[1][0], x[1][1], targetX, targetY, itemsData))
+            openList.remove(currentNode)
+            closedList.add(currentNode)
+
+            #check if we have reached the goal
+            if currentNode[1] in targets:
+                return self.reconstructPath(currentNode)
+
+            #generate the neighbors of the current node
+            neighbors = self.getNeighbors(currentNode, walls, crates)
+
+            for neighbor in neighbors:
+                if neighbor in closedList:
+                    continue
+
+                if neighbor not in openList:
+                    openList.append(neighbor)
+
+        return None  # no path found
+
     def solveSokobanPuzzle(self, width, height, mapData, itemsData):
         # YOU NEED TO REWRITE THE IMPLEMENTATION OF THIS METHOD TO MAKE THE BOT SMARTER
         # Default stupid behavior: Think (sleep) for 3 seconds, and then return a
