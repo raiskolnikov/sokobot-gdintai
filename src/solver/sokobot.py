@@ -55,11 +55,11 @@ class SokoBot:
         bestCrate = None
         bestValue = float("inf")
 
-        for each crate:
+        for each in crates:
 
             smallestHeuristic = float("inf")
 
-            for each target:
+            for each in targets:
 
                 heuristic = self.getHeuristic(width, height, crateX, crateY, targetX, targetY, itemsData)
 
@@ -83,6 +83,7 @@ class SokoBot:
         #get the coordinates of the player, crates, and targets
         walls, targets, crates, player = self.getCoordinates(width, height, mapData, itemsData)
 
+        #choose priority target -- TODO
         #choose the priority crate to move
         priorityCrate = self.choosePriorityCrate(width, height, crateX, crateY, targetX, targetY, itemsData)
 
