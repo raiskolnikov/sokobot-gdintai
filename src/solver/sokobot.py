@@ -113,31 +113,32 @@ class SokoBot:
 
         return None  # no path found
 
+    DIRS = {"u": (-1, 0), "d": (1, 0), "l": (0, -1), "r": (0, 1)}
+
+    def BFS(self, player, crates, walls):
+        # uses BFS to search where the player can walk without pushing anything
+
+        visited = {player: None}  # tile we came from
+
+        queue = deque([player])  # tiles that are waiting to be visited/checked
+        while queue:
+            r, c = queue.popleft()
+            for letter, (dr,dc) in self.DIRS.items():
+                next = (r + dr, c + dc)  # let next be equal to the old + the change in direction
+                if next not in visited and next not in walls and next not in crates:
+                    visited[next] = ((r,c), letter)  #remember where we came from and how
+                    queue.append(next)  # check the tiles adjacent to it later
+
+        return visited
+
     def solveSokobanPuzzle(self, width, height, mapData, itemsData):
         # YOU NEED TO REWRITE THE IMPLEMENTATION OF THIS METHOD TO MAKE THE BOT SMARTER
         # Default stupid behavior: Think (sleep) for 3 seconds, and then return a
         # sequence
         # that just moves left and right repeatedly.
 
-        DIRS = {"u": (-1, 0), "d": (1, 0), "l": (0, -1), "r": (0, 1)}
 
         walls, targets, crates, player = self.getCoordinates(width, height, mapData, itemsData)
-
-        def BFS(player, crates):
-            # uses BFS to search where the player can walk without pushing anything
-
-            visited = {player}  # tiles found
-
-            queue = deque([player])  # tiles that are waiting to be visited/checked
-            while queue:
-                r, c = queue.popleft()
-                for dr, dc in DIRS.values():
-                    next = (r + dr, c + dc)     # let next be equal to the old + the change in direction
-                    if next not in visited and next not in walls and next not in crates:
-                        visited.add(next)   # mark tile as visited/reachable
-                        queue.append(next)  # check the tiles adjacent to it later
-
-            return visited
 
         print("Player:", player)
         print("BFS reachable:", sorted(BFS(player, crates)))
