@@ -29,11 +29,19 @@ class SokoBot:
         return walls, targets, crates, player
 
     def getHeuristic(self, width, height, crates, targets, itemsData):
+<<<<<<< Updated upstream
         # Calculates a heuristic value based on a set formula
         # using the current position of a box to a target
 
         # Get the number of crates "n"
         # [REVISION] - USE CRATES
+=======
+        #Calculates a heuristic value based on a set formula
+        # using the current position of a box to a target
+
+        #Get the number of crates "n"
+        #[REVISION] - USE CRATES
+>>>>>>> Stashed changes
         n = 0
         for row in range(height):
             for col in range(width):
@@ -44,6 +52,7 @@ class SokoBot:
         tempTargets = []
         tempValues = []
         tempHeuristics = []
+<<<<<<< Updated upstream
 
         # Calculate the Heuristic Value between all crates and targets
         for targetY, targetX in crates:
@@ -88,6 +97,57 @@ class SokoBot:
                 finalTarget = tuple(tempTargets[y])
 
         return minHeuristic, finalCrate, finalTarget
+=======
+
+        # Calculate the Heuristic Value between all crates and targets
+        for targetY, targetX in crates:
+            for crateY, crateX in targets:
+
+                hX = abs(targetX - crateX)
+                hY = abs(targetY - crateY)
+
+                h = (hX + hY) + n
+
+                tempHeuristics.append(h)
+
+                tempValues.append(h)
+                tempValues.append(targetY)
+                tempValues.append(targetX)
+
+                tempTuple = tuple(tempValues)
+
+                tempTargets.append(tempTuple)
+
+                tempValues.clear()
+
+                tempValues.append(h)
+                tempValues.append(crateY)
+                tempValues.append(crateX)
+
+                tempTuple = tuple(tempValues)
+
+                tempCrates.append(tempTuple)
+
+                tempValues.clear()
+
+
+        minHeuristic = min(tempHeuristics)
+        finalCrate = tuple()
+        finalTarget = tuple()
+
+        for x in tempCrates:
+            if tempHeuristics[x][0] == minHeuristic:
+                 finalCrate = tuple(tempCrates[x])
+
+        for y in tempTargets:
+            if tempHeuristics[y][0] == minHeuristic:
+                 finalTarget = tuple(tempTargets[y])
+
+
+        return minHeuristic, finalCrate, finalTarget
+
+
+>>>>>>> Stashed changes
         
     def choosePriorityCrate(self, width, height, crateX, crateY, targetX, targetY, itemsData):
         #this helper function will help the bot choose the correct crate
@@ -112,6 +172,14 @@ class SokoBot:
                 bestCrate = crate
 
         return bestCrate
+
+    def choosePriorityTarget(self, width, height, targets):
+        targetsMax = len(targets)
+
+        for each in targets:
+
+
+
 
     def aStarSearch(self, width, height, mapData, itemsData):
         #this function will implement the A* search algorithm to find the best path to move a crate to a target
