@@ -131,6 +131,20 @@ class SokoBot:
 
         return visited
 
+    # getPath returns the string path from initial position to goal
+    # it searches a cameFrom dictionary that stores the coordinate,
+    # the coordinate before it got there, and the direction it came from
+    def getPath(self, cameFrom, goal):
+        letters = []  # letters is a string that will append the path
+        tile = goal
+        while cameFrom[tile] is not None:
+            prevTile, letter = cameFrom[tile]
+            letters.append(letter)  # add the letter (u,d,l,r) into the string
+            tile = prevTile
+
+        letters.reverse()  # flip the string since we started from the goal/end
+        return "".join(letters)  # makes it into one string instead of individual
+
     def solveSokobanPuzzle(self, width, height, mapData, itemsData):
         # YOU NEED TO REWRITE THE IMPLEMENTATION OF THIS METHOD TO MAKE THE BOT SMARTER
         # Default stupid behavior: Think (sleep) for 3 seconds, and then return a
@@ -140,13 +154,12 @@ class SokoBot:
 
         walls, targets, crates, player = self.getCoordinates(width, height, mapData, itemsData)
 
-        print("Player:", player)
-        print("BFS reachable:", sorted(BFS(player, crates)))
-
+        cameFrom = self.BFS(player, crates, walls)
 
 
         try:
             time.sleep(3)
         except Exception as ex:
             print(ex)
-        return "lrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlr"
+        #return "lrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlr"
+        return self.getPath(cameFrom, (3, 5))
