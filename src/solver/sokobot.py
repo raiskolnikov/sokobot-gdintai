@@ -54,8 +54,8 @@ class SokoBot:
 
 
         # Calculate the Heuristic Value between all crates and targets
-        for targetY, targetX in crates:
-            for crateY, crateX in targets:
+        for crateY, crateX in crates:
+            for targetY, targetX in targets:
                 hX = abs(targetX - crateX)
                 hY = abs(targetY - crateY)
 
@@ -87,47 +87,16 @@ class SokoBot:
         finalCrate = tuple()
         finalTarget = tuple()
 
-        for x in tempCrates:
-            if tempHeuristics[x][0] == minHeuristic:
-                finalCrate = tuple(tempCrates[x])
+        for x in range(len(tempCrates)):
+            if tempHeuristics[x]== minHeuristic:
+                finalCrate = tempCrates[x]
 
-        for y in tempTargets:
-            if tempHeuristics[y][0] == minHeuristic:
-                finalTarget = tuple(tempTargets[y])
+        for y in range(len(tempTargets)):
+            if tempHeuristics[y] == minHeuristic:
+                finalTarget = tempTargets[y]
 
         return minHeuristic, finalCrate, finalTarget
 
-
-
-        
-    def choosePriorityCrate(self, width, height, crateX, crateY, targetX, targetY, itemsData):
-        #this helper function will help the bot choose the correct crate
-        #looks for the crate with the smallest heuristic value among the crate
-
-        bestCrate = None
-        bestValue = float("inf")
-
-        for each in crates:
-
-            smallestHeuristic = float("inf")
-
-            for each in targets:
-
-                heuristic = self.getHeuristic(width, height, crateX, crateY, targetX, targetY, itemsData)
-
-                if heuristic < smallestHeuristic:
-                    smallestHeuristic = heuristic
-
-            if smallestHeuristic < bestValue:
-                bestValue = smallestHeuristic
-                bestCrate = crate
-
-        return bestCrate
-
-    def choosePriorityTarget(self, width, height, targets):
-        targetsMax = len(targets)
-
-        for each in targets:
 
 
 
@@ -143,17 +112,15 @@ class SokoBot:
         #get the coordinates of the player, crates, and targets
         walls, targets, crates, player = self.getCoordinates(width, height, mapData, itemsData)
 
-        #choose priority target -- TODO
-        #choose the priority crate to move
-        priorityCrate = self.choosePriorityCrate(width, height, crateX, crateY, targetX, targetY, itemsData)
+
 
         #initialize the starting node
-        startNode = (player, priorityCrate)
-        openList.append(startNode)
+        #startNode = (player, priorityCrate)
+        #openList.append(startNode)
 
         while openList:
             #get the node with the lowest f value
-            currentNode = min(openList, key=lambda x: self.getHeuristic(width, height, x[1][0], x[1][1], targetX, targetY, itemsData))
+            currentNode = min(openList, key=lambda x: self.getHeuristic(width, height, x[1][0], x[1][1],  itemsData))
             openList.remove(currentNode)
             closedList.add(currentNode)
 
@@ -214,23 +181,9 @@ class SokoBot:
 
         walls, targets, crates, player = self.getCoordinates(width, height, mapData, itemsData)
 
-        #cameFrom = self.BFS(player, crates, walls)
-
         cameFrom = self.BFS(player, crates, walls)
 
-        print("Player:", player)
-        print("cameFrom:")
-        for tile, value in cameFrom.items():
-            print("  ", tile, "->", value)
-
-        expected = {(1, 2): "", (1, 3): "r", (1, 5): "rrr", (2, 5): "rrrd", (3, 5): "rrrdd"}
-        for goal, answer in expected.items():
-            got = self.getPath(cameFrom, goal)
-            print("path to", goal, "=", repr(got), "PASS" if got == answer else "FAIL, expected " + repr(answer))
-
-        print("crate (2,2) reachable?", (2, 2) in cameFrom, "(should be False)")
-        # ---- END TEMP TEST ----
-
+    
         try:
             time.sleep(3)
         except Exception as ex:
