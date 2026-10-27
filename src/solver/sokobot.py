@@ -157,6 +157,76 @@ class SokoBot:
                     queue.append(next)  # check the tiles adjacent to it later
 
         return visited
+        
+    def isValidMove(self, player, direction, crates, walls):
+        # Checks if the player's next move is legal
+        # Returns True if the player can move or push a crate
+        # Returns False if the move is blocked by a wall
+        # or if a crate cannot be pushed
+
+        # Get the row and column change based on the direction
+        dr, dc = self.DIRS[direction]
+
+        # Calculate the player's next position
+        nextPlayer = (player[0] + dr, player[1] + dc)
+
+        # Check if the player walks into a wall
+        if nextPlayer in walls:
+            return False
+
+        # Check if the player is attempting to push a crate
+        if nextPlayer in crates:
+
+            # Calculate where the crate would move
+            nextCrate = (nextPlayer[0] + dr, nextPlayer[1] + dc)
+
+            # Check if the crate would hit a wall
+            if nextCrate in walls:
+                return False
+
+            # Check if the crate would hit another crate
+            if nextCrate in crates:
+                return False
+
+        # Otherwise, the move is valid
+        return True
+        
+    def isDeadEnd(self, crate, walls, targets):
+        # Checks whether a crate has been pushed into a dead end
+        # Currently detects corner dead ends caused by walls
+        # Returns True if the crate can no longer reach a target
+        # Returns False otherwise
+
+        # If the crate is already on a target, it is not considered a dead end
+        if crate in targets:
+            return False
+
+        row, col = crate
+
+        # Get the positions surrounding the crate
+        up = (row - 1, col)
+        down = (row + 1, col)
+        left = (row, col - 1)
+        right = (row, col + 1)
+
+        # Check if the crate is trapped in the upper-left corner
+        if up in walls and left in walls:
+            return True
+
+        # Check if the crate is trapped in the upper-right corner
+        if up in walls and right in walls:
+            return True
+
+        # Check if the crate is trapped in the lower-left corner
+        if down in walls and left in walls:
+            return True
+
+        # Check if the crate is trapped in the lower-right corner
+        if down in walls and right in walls:
+            return True
+
+        # Otherwise, the crate is not in a dead end
+        return False
 
     # getPath returns the string path from initial position to goal
     # it searches a cameFrom dictionary that stores the coordinate,
