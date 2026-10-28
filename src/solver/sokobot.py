@@ -186,7 +186,7 @@ class SokoBot:
 
             # check if every crate is on a target, if so return the path to get here
             if currentCrates <= goal:
-                return self.reconstructPath(parent, currentKey)
+                return self.getPath(parent, currentKey)
 
             for crate in currentCrates:
                 for direction, (dr, dc) in self.DIRS.items():
@@ -262,19 +262,6 @@ class SokoBot:
         letters.reverse()  # flip the string since we started from the goal/end
         return "".join(letters)  # makes it into one string instead of individual
 
-    def reconstructPath(self, parent, key):
-
-        segments = [] # holds the move string for each push, collected in reverse order
-
-        # the start state has parent None, so we stop when we reach it
-        while parent[key] is not None:
-            # step back one state and get the moves to get there
-            key, moves = parent[key]
-            segments.append(moves)
-
-        # after collecting all the moves, reverse the order so that they are in the correct order from start to finish
-        segments.reverse()
-        return "".join(segments) # join the segements into one string and return it
 
     def solveSokobanPuzzle(self, width, height, mapData, itemsData):
         # YOU NEED TO REWRITE THE IMPLEMENTATION OF THIS METHOD TO MAKE THE BOT SMARTER
