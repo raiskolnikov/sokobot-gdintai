@@ -1,4 +1,5 @@
 import time
+import heapq
 from collections import deque
 
 
@@ -99,35 +100,45 @@ class SokoBot:
 
     def getAliveTargets(self, crates, targets, walls):
         #Reverse-BFS that 'pulls' crates backwards because any square a crate can be pulled to means it could be pushed from
+        # crates standing on any other square are in dead position
 
+        # every target is an alive square
         alive = set(targets)
+        # BFS queue to explore all tiles that a crate can be pulled to
         queue = deque(targets)
 
+        # loop while no new alive targets are found
         while queue:
+            # take the next tile from the front of the queue
             r, c = queue.popleft()
+            # move crate in all four directions
             for dr, dc in self.DIRS.values():
                 crateFrom = (r + dr, c + dc) #where crate originally is from before push
                 playerFrom = (r + 2 * dr, c + 2 * dc) #where player originally is from before movement
 
+                # if the crate or player would be in a wall, then skip
                 if crateFrom in walls or playerFrom in walls:
                     continue
+                # if the crate has already been found to be alive, then skip
                 if crateFrom in alive:
                     continue
 
+                # if the crate can be pulled to the current tile, then add to alive set
                 alive.add(crateFrom)
+                # queue the crate's original position to explore all tiles that a crate can be pulled to from there
                 queue.append(crateFrom)
 
-        return alive
+        return alive # returns set of all tiles that a crate can be pulled to
 
     def isDeadEnd(self, crate, walls, targets, aliveTargets):
             # Returns True if the crate movement will not lead to a solution
             # Returns False otherwise
     
-            # If the crate is already on a target, it is not considered a dead end
+            # check if the crate is already on a target
             if crate in targets:
                 return False
     
-            # If the crate is not in the set of alive targets, it is considered a dead end
+            # check whether or not crate is in the set of alive targets
             if crate not in aliveTargets:
                 return True
     
@@ -135,11 +146,11 @@ class SokoBot:
             for dr, dc in self.DIRS.values():
                 adjacent = (r + dr, c + dc)
                 if adjacent not in walls:
-                    return False  # There is at least one adjacent square that is not a wall        
+                    return False  # There is at least one adjacent tile that is not a wall        
             return False
     
 
-    def isValidMove(self, player, direction, crates, walls, targets, aliveSquares):
+    def isValidMove(self, player, direction, crates, walls, targets, aliveTargets):
         # Checks if the player's next move is legal
         # Returns True if the player can move or push a crate
         # Returns False if the move is blocked by a wall
@@ -166,7 +177,7 @@ class SokoBot:
                 return False
 
             newCrates = crates - {nextPlayer} | {nextCrate}
-            if self.isDeadEnd(nextCrate, walls, targets, aliveSquares):
+            if self.isDeadEnd(nextCrate, walls, targets, aliveTargets):
                 return False  # The crate would be pushed into a dead end
 
         # Otherwise, the move is valid
@@ -175,40 +186,98 @@ class SokoBot:
     
     def aStarSearch(self, width, height, mapData, itemsData):
         #this function will implement the A* search algorithm to find the best path to move a crate to a target
-        #it will return the path as a string of directions
+        # State is (player, crate), crate is frozenset of crate positions, player is a tuple of player position
+        # Move is the crate push, walking is done by BFS then added to move string
+        # Cost is g which is total number of player moves so far
+        # returns a string of direcctional moves or /none if no solution is found
+        # each search move is a crate push
 
-        #initialize the open and closed lists
-        openList = []
-        closedList = set()
-
-        #get the coordinates of the player, crates, and targets
+        #read the map and get coordinates of all important data
         walls, targets, crates, player = self.getCoordinates(width, height, mapData, itemsData)
 
-        #initialize the starting node
-        #startNode = (player, priorityCrate)
-        #openList.append(startNode)
+        # tiles that a crate could still be pushed to a target from
+        aliveTargets = self.getAliveTargets(crates, targets, walls)
+        goal = frozenset(targets) #goal meaning every crate is on a target (frozenset because it will be used to compare with ccrate sets)
+        crates = frozenset(crates) #crate locations are stored as a frozenset so that it is hashable
 
-        while openList:
-            #get the node with the lowest f value
-            currentNode = min(openList, key=lambda x: self.getHeuristic(width, height, x[1][0], x[1][1],  itemsData))
-            openList.remove(currentNode)
-            closedList.add(currentNode)
+        def stateKey(p, cr):
+            #finds every tile the player can walk to without pushing a crate
+            reach = self.BFS(p, cr, walls)
+            # min(reach) is the top left most tile which is the player position, returns reach because it will give the walk to each push spot
+            return (min(reach), cr), reach
 
-            #check if we have reached the goal
-            if currentNode[1] in targets:
-                return self.reconstructPath(currentNode)
+        # key and reachable tiles for the starting state
+        startKey, startReach = stateKey(player, crates)
 
-            #generate the neighbors of the current node
-            neighbors = self.getNeighbors(currentNode, walls, crates)
+        # parent will store the previous state and moves used to get here
+        parent = {startKey: None}
+        # bestG is the lowest cost to reach a state
+        bestG = {startKey: 0}
+        # states that have will be explored and not revisited
+        closed = set()
 
-            for neighbor in neighbors:
-                if neighbor in closedList:
-                    continue
+        #tie-breaker for the heap
+        counter = 0
 
-                if neighbor not in openList:
-                    openList.append(neighbor)
+        # the openlist is a heap ordered by f = g + h, where g is the cost to reach a state and h is the heuristic value of that state
+        openHeap = [(self.getHeuristics(width, height, crates, targets, itemsData)[0], counter, startKey, startReach)]
 
-        return None  # no path found
+        while openHeap:
+            # pop the state with the lowest f value
+            _, _, currentKey, currentreach = heapq.heappop(openHeap)
+
+            # remove older and higher cost states from the open list
+            if currentKey in closed:
+                continue
+            closed.add(currentKey)
+
+            # unpack the current state
+            currentPlayer, currentCrates = currentKey
+
+            # check if every crate is on a target, if so return the path to get here
+            if currentCrates <= goal:
+                return self.reconstructPath(parent, currentKey)
+
+            for crate in currentCrates:
+                for direction, (dr, dc) in self.DIRS.items():
+                    standAt = (crate[0] - dr, crate[1] - dc) #where player must stand to push
+
+                    # rejects push if player can't reach the square to push from
+                    if standAt not in currentreach:
+                        continue
+                    # rejects push if it is not a valid move
+                    if not self.isValidMove(standAt, direction, currentCrates, walls, targets, aliveTargets):
+                        continue
+
+                    # the crate's new position and the crate set after the push
+                    nextCrate = (crate[0] + dr, crate[1] + dc)
+                    nextCrates = currentCrates - {crate} | {nextCrate}
+
+                    # after a push, the player will be in the crate's former position
+                    nextKey, nextReach = stateKey(crate, nextCrates)
+                    # if it is already fully expanded, put into closed and skip it
+                    if nextKey in closed:
+                        continue
+
+                    # the moves to get to the push position and the push itself
+                    moves = self.getPath(currentreach, standAt) + direction
+                    # cost so far to the new state is the cost to get to the current state added to the cost of the moves to get the crate to the new position
+                    g = bestG[currentKey] + len(moves)
+
+                    if nextKey not in bestG or g < bestG[nextKey]:
+                        # store the current state as the parent of the new state and the moves to get there
+                        parent[nextKey] = (currentKey, moves)
+                        # store the cost to reach the new state
+                        bestG[nextKey] = g
+                        # tie breaker
+                        counter += 1
+
+                        # estimate the cost to reach the goal from the new state using the heuristic function
+                        h = self.getHeuristics(width, height, nextCrates, targets, itemsData)[0]
+                        # add to the open list with the total estimated cost f = g + h, the tie breaker, the new state, and the reachable tiles from that state
+                        heapq.heappush(openHeap, (g + h, counter, nextKey, nextReach))
+
+        return None  # No solution found
 
     DIRS = {"u": (-1, 0), "d": (1, 0), "l": (0, -1), "r": (0, 1)}
 
@@ -243,17 +312,33 @@ class SokoBot:
         letters.reverse()  # flip the string since we started from the goal/end
         return "".join(letters)  # makes it into one string instead of individual
 
+    def reconstructPath(self, parent, key):
+
+        segments = [] # holds the move string for each push, collected in reverse order
+
+        # the start state has parent None, so we stop when we reach it
+        while parent[key] is not None:
+            # step back one state and get the moves to get there
+            key, moves = parent[key]
+            segments.append(moves)
+
+        # after collecting all the moves, reverse the order so that they are in the correct order from start to finish
+        segments.reverse()
+        return "".join(segments) # join the segements into one string and return it
+
     def solveSokobanPuzzle(self, width, height, mapData, itemsData):
         # YOU NEED TO REWRITE THE IMPLEMENTATION OF THIS METHOD TO MAKE THE BOT SMARTER
         # Default stupid behavior: Think (sleep) for 3 seconds, and then return a
         # sequence
         # that just moves left and right repeatedly.
 
-
         walls, targets, crates, player = self.getCoordinates(width, height, mapData, itemsData)
-        aliveSquares = self.getAliveTargets(crates, targets, walls)
+        aliveTargets = self.getAliveTargets(crates, targets, walls)
         crates = frozenset(crates)
         cameFrom = self.BFS(player, crates, walls)
+
+        path = self.aStarSearch(width, height, mapData, itemsData)
+        return path if path is not None else ""
 
         try:
             time.sleep(3)
