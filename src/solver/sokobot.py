@@ -29,74 +29,24 @@ class SokoBot:
 
         return walls, targets, crates, player
 
-    def getHeuristics(self, width, height, crates, targets, itemsData):
-        # Calculates a heuristic value based on a set formula
-        # using the current position of a box to a target
-
-        # Get the number of crates "n"
-        # [REVISION] - USE CRATES
-
+    def getHeuristics(self, crates, targets):
         #Calculates a heuristic value based on a set formula
         # using the current position of a box to a target
 
-        #Get the number of crates "n"
-        #[REVISION] - USE CRATES
-        n = 0
-        for row in range(height):
-            for col in range(width):
-                if itemsData[row][col] == "$" or itemsData[row][col] == "*":
-                    n += 1
-
-        #Fixed something
-        tempCrates = []
-        tempTargets = []
-        tempValues = []
-        tempHeuristics = []
-
-
         # Calculate the Heuristic Value between all crates and targets
+        totalHeuristic = 0
+
         for crateY, crateX in crates:
+            minHeuristic = 0
             for targetY, targetX in targets:
                 hX = abs(targetX - crateX)
                 hY = abs(targetY - crateY)
+                h = hX + hY
+                if minHeuristic == 0 or h < minHeuristic:
+                    minHeuristic = h
+            totalHeuristic += minHeuristic
 
-                h = (hX + hY) + n
-
-                tempHeuristics.append(h)
-
-                tempValues.append(h)
-                tempValues.append(targetY)
-                tempValues.append(targetX)
-
-                tempTuple = tuple(tempValues)
-
-                tempTargets.append(tempTuple)
-
-                tempValues.clear()
-
-                tempValues.append(h)
-                tempValues.append(crateY)
-                tempValues.append(crateX)
-
-                tempTuple = tuple(tempValues)
-
-                tempCrates.append(tempTuple)
-
-                tempValues.clear()
-
-        minHeuristic = min(tempHeuristics)
-        finalCrate = tuple()
-        finalTarget = tuple()
-
-        for x in range(len(tempCrates)):
-            if tempHeuristics[x]== minHeuristic:
-                finalCrate = tempCrates[x]
-
-        for y in range(len(tempTargets)):
-            if tempHeuristics[y] == minHeuristic:
-                finalTarget = tempTargets[y]
-
-        return minHeuristic, finalCrate, finalTarget
+        return totalHeuristic, None, None
 
     def getAliveTargets(self, crates, targets, walls):
         #Reverse-BFS that 'pulls' crates backwards because any square a crate can be pulled to means it could be pushed from
@@ -220,7 +170,7 @@ class SokoBot:
         counter = 0
 
         # the openlist is a heap ordered by f = g + h, where g is the cost to reach a state and h is the heuristic value of that state
-        openHeap = [(self.getHeuristics(width, height, crates, targets, itemsData)[0], counter, startKey, startReach)]
+        openHeap = [(self.getHeuristics(crates, targets)[0], counter, startKey, startReach)]
 
         while openHeap:
             # pop the state with the lowest f value
@@ -273,7 +223,7 @@ class SokoBot:
                         counter += 1
 
                         # estimate the cost to reach the goal from the new state using the heuristic function
-                        h = self.getHeuristics(width, height, nextCrates, targets, itemsData)[0]
+                        h = self.getHeuristics(nextCrates, targets,)[0]
                         # add to the open list with the total estimated cost f = g + h, the tie breaker, the new state, and the reachable tiles from that state
                         heapq.heappush(openHeap, (g + h, counter, nextKey, nextReach))
 
@@ -332,17 +282,6 @@ class SokoBot:
         # sequence
         # that just moves left and right repeatedly.
 
-        walls, targets, crates, player = self.getCoordinates(width, height, mapData, itemsData)
-        aliveTargets = self.getAliveTargets(crates, targets, walls)
-        crates = frozenset(crates)
-        cameFrom = self.BFS(player, crates, walls)
 
         path = self.aStarSearch(width, height, mapData, itemsData)
         return path if path is not None else ""
-
-        try:
-            time.sleep(3)
-        except Exception as ex:
-            print(ex)
-        #return "lrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlrlr"
-        return self.getPath(cameFrom, (3, 5))
