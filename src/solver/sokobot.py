@@ -80,24 +80,68 @@ class SokoBot:
 
         return alive # returns set of all tiles that a crate can be pulled to
 
-    def isDeadEnd(self, crate, walls, targets, aliveTargets):
-            # Returns True if the crate movement will not lead to a solution
-            # Returns False otherwise
-    
-            # check if the crate is already on a target
-            if crate in targets:
-                return False
-    
-            # check whether or not crate is in the set of alive targets
-            if crate not in aliveTargets:
-                return True
-    
-            r, c = crate
-            for dr, dc in self.DIRS.values():
-                adjacent = (r + dr, c + dc)
-                if adjacent not in walls:
-                    return False  # There is at least one adjacent tile that is not a wall        
-            return False
+    def isDeadEnd(self, crate, crates, walls, targets, aliveTargets):
+        # Returns True if moving a crate here will never lead to a solution
+        # Checks:
+        # 1. Dead squares from reverse BFS
+        # 2. 2x2 frozen blocks made of walls and crates
+
+        # Check whether the crate is on a dead square
+        if crate not in aliveTargets:
+            return True
+
+        row, col = crate
+
+        # Four possible 2x2 blocks that contain this crate
+        offsets = [
+            (0, 0),
+            (-1, 0),
+            (0, -1),
+            (-1, -1)
+        ]
+
+        for rowOffset, colOffset in offsets:
+
+            block = [
+                (row + rowOffset,     col + colOffset),
+                (row + rowOffset + 1, col + colOffset),
+                (row + rowOffset,     col + colOffset + 1),
+                (row + rowOffset + 1, col + colOffset + 1)
+            ]
+
+            # Assume every tile in this block is blocked
+            blocked = True
+
+            # Store every crate that appears in this block
+            cratesInBlock = []
+
+            for tile in block:
+
+                if tile in walls:
+                    continue
+
+                elif tile in crates:
+                    cratesInBlock.append(tile)
+
+                else:
+                    blocked = False
+                    break
+
+            # If every tile is blocked, check whether all crates inside the block are already on targets
+            if blocked:
+
+                allCratesOnTargets = True
+
+                for cratePosition in cratesInBlock:
+                    if cratePosition not in targets:
+                        allCratesOnTargets = False
+                        break
+
+                # Frozen block containing at least one crate that is not on a target
+                if not allCratesOnTargets:
+                    return True
+
+        return False
     
 
     def isValidMove(self, player, direction, crates, walls, targets, aliveTargets):
@@ -127,7 +171,7 @@ class SokoBot:
                 return False
 
             newCrates = crates - {nextPlayer} | {nextCrate}
-            if self.isDeadEnd(nextCrate, walls, targets, aliveTargets):
+            if self.isDeadEnd(nextCrate, newCrates, walls, targets, aliveTargets):
                 return False  # The crate would be pushed into a dead end
 
         # Otherwise, the move is valid
