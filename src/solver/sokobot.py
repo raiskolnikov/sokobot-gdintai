@@ -97,10 +97,82 @@ class SokoBot:
 
         return minHeuristic, finalCrate, finalTarget
 
+    def getAliveTargets(self, crates, targets, walls):
+        #Reverse-BFS that 'pulls' crates backwards because any square a crate can be pulled to means it could be pushed from
 
+        alive = set(targets)
+        queue = deque(targets)
 
+        while queue:
+            r, c = queue.popleft()
+            for dr, dc in self.DIRS.values():
+                crateFrom = (r + dr, c + dc) #where crate originally is from before push
+                playerFrom = (r + 2 * dr, c + 2 * dc) #where player originally is from before movement
 
+                if crateFrom in walls or playerFrom in walls:
+                    continue
+                if crateFrom in alive:
+                    continue
 
+                alive.add(crateFrom)
+                queue.append(crateFrom)
+
+        return alive
+
+    def isDeadEnd(self, crate, walls, targets, aliveTargets):
+            # Returns True if the crate movement will not lead to a solution
+            # Returns False otherwise
+    
+            # If the crate is already on a target, it is not considered a dead end
+            if crate in targets:
+                return False
+    
+            # If the crate is not in the set of alive targets, it is considered a dead end
+            if crate not in aliveTargets:
+                return True
+    
+            r, c = crate
+            for dr, dc in self.DIRS.values():
+                adjacent = (r + dr, c + dc)
+                if adjacent not in walls:
+                    return False  # There is at least one adjacent square that is not a wall        
+            return False
+    
+
+    def isValidMove(self, player, direction, crates, walls, targets, aliveSquares):
+        # Checks if the player's next move is legal
+        # Returns True if the player can move or push a crate
+        # Returns False if the move is blocked by a wall
+        # or if a crate cannot be pushed
+
+        # Get the row and column change based on the direction
+        dr, dc = self.DIRS[direction]
+
+        # Calculate the player's next position
+        nextPlayer = (player[0] + dr, player[1] + dc)
+
+        # Check if the player walks into a wall
+        if nextPlayer in walls:
+            return False
+
+        # Check if the player is attempting to push a crate
+        if nextPlayer in crates:
+
+            # Calculate where the crate would move
+            nextCrate = (nextPlayer[0] + dr, nextPlayer[1] + dc)
+
+            # Check if the crate would hit a wall
+            if nextCrate in walls or nextCrate in crates:
+                return False
+
+            newCrates = crates - {nextPlayer} | {nextCrate}
+            if self.isDeadEnd(nextCrate, walls, targets, aliveSquares):
+                return False  # The crate would be pushed into a dead end
+
+        # Otherwise, the move is valid
+        return True
+        
+    
     def aStarSearch(self, width, height, mapData, itemsData):
         #this function will implement the A* search algorithm to find the best path to move a crate to a target
         #it will return the path as a string of directions
@@ -111,8 +183,6 @@ class SokoBot:
 
         #get the coordinates of the player, crates, and targets
         walls, targets, crates, player = self.getCoordinates(width, height, mapData, itemsData)
-
-
 
         #initialize the starting node
         #startNode = (player, priorityCrate)
@@ -158,76 +228,7 @@ class SokoBot:
 
         return visited
         
-    def isValidMove(self, player, direction, crates, walls):
-        # Checks if the player's next move is legal
-        # Returns True if the player can move or push a crate
-        # Returns False if the move is blocked by a wall
-        # or if a crate cannot be pushed
-
-        # Get the row and column change based on the direction
-        dr, dc = self.DIRS[direction]
-
-        # Calculate the player's next position
-        nextPlayer = (player[0] + dr, player[1] + dc)
-
-        # Check if the player walks into a wall
-        if nextPlayer in walls:
-            return False
-
-        # Check if the player is attempting to push a crate
-        if nextPlayer in crates:
-
-            # Calculate where the crate would move
-            nextCrate = (nextPlayer[0] + dr, nextPlayer[1] + dc)
-
-            # Check if the crate would hit a wall
-            if nextCrate in walls:
-                return False
-
-            # Check if the crate would hit another crate
-            if nextCrate in crates:
-                return False
-
-        # Otherwise, the move is valid
-        return True
-        
-    def isDeadEnd(self, crate, walls, targets):
-        # Checks whether a crate has been pushed into a dead end
-        # Currently detects corner dead ends caused by walls
-        # Returns True if the crate can no longer reach a target
-        # Returns False otherwise
-
-        # If the crate is already on a target, it is not considered a dead end
-        if crate in targets:
-            return False
-
-        row, col = crate
-
-        # Get the positions surrounding the crate
-        up = (row - 1, col)
-        down = (row + 1, col)
-        left = (row, col - 1)
-        right = (row, col + 1)
-
-        # Check if the crate is trapped in the upper-left corner
-        if up in walls and left in walls:
-            return True
-
-        # Check if the crate is trapped in the upper-right corner
-        if up in walls and right in walls:
-            return True
-
-        # Check if the crate is trapped in the lower-left corner
-        if down in walls and left in walls:
-            return True
-
-        # Check if the crate is trapped in the lower-right corner
-        if down in walls and right in walls:
-            return True
-
-        # Otherwise, the crate is not in a dead end
-        return False
-
+    
     # getPath returns the string path from initial position to goal
     # it searches a cameFrom dictionary that stores the coordinate,
     # the coordinate before it got there, and the direction it came from
@@ -250,10 +251,10 @@ class SokoBot:
 
 
         walls, targets, crates, player = self.getCoordinates(width, height, mapData, itemsData)
-
+        aliveSquares = self.getAliveTargets(crates, targets, walls)
+        crates = frozenset(crates)
         cameFrom = self.BFS(player, crates, walls)
 
-    
         try:
             time.sleep(3)
         except Exception as ex:
