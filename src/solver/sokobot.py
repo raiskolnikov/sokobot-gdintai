@@ -299,11 +299,11 @@ class SokoBot:
     # getPath returns the string path from initial position to goal
     # it searches a cameFrom dictionary that stores the coordinate,
     # the coordinate before it got there, and the direction it came from
-    def getPath(self, cameFrom, goal):
+    def getPath(self, parent, goal):
         letters = []  # letters is a string that will append the path
         tile = goal
-        while cameFrom[tile] is not None:
-            prevTile, letter = cameFrom[tile]
+        while parent[tile] is not None:
+            prevTile, letter = parent[tile]
             letters.append(letter)  # add the letter (u,d,l,r) into the string
             tile = prevTile
 
