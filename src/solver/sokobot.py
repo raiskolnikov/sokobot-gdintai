@@ -31,18 +31,21 @@ class SokoBot:
 
     def getHeuristics(self, crates, targets):
         #Calculates a heuristic value based on a set formula
-        # using the current position of a box to a target
+        # using the current of all boxes on all targets
 
-        # Calculate the Heuristic Value between all crates and targets
+        # Total Heuristic is 0 because the calculations have not started
         totalHeuristic = 0
 
+        #Loop calculates the heuristic values between a crate and a set of targets.
+        #The minimum heuristic calculated from this loop is then added to the total.
+        #This repeats until all current positions of crates and all targets have been accounted for.
         for crateY, crateX in crates:
-            minHeuristic = 0
+            minHeuristic = None
             for targetY, targetX in targets:
                 hX = abs(targetX - crateX)
                 hY = abs(targetY - crateY)
                 h = hX + hY
-                if minHeuristic == 0 or h < minHeuristic:
+                if minHeuristic == None or h < minHeuristic:
                     minHeuristic = h
             totalHeuristic += minHeuristic
 
@@ -256,7 +259,7 @@ class SokoBot:
                     # the moves to get to the push position and the push itself
                     moves = self.getPath(currentreach, standAt) + direction
                     # cost so far to the new state is the cost to get to the current state added to the cost of the moves to get the crate to the new position
-                    g = bestG[currentKey] + len(moves)
+                    g = bestG[currentKey] + 1
 
                     if nextKey not in bestG or g < bestG[nextKey]:
                         # store the current state as the parent of the new state and the moves to get there
@@ -268,8 +271,9 @@ class SokoBot:
 
                         # estimate the cost to reach the goal from the new state using the heuristic function
                         h = self.getHeuristics(nextCrates, targets,)[0]
-                        # add to the open list with the total estimated cost f = g + h, the tie breaker, the new state, and the reachable tiles from that state
-                        heapq.heappush(openHeap, (g + h, counter, nextKey, nextReach))
+                        # add to the open list with the total estimated cost f = g + 2h, the tie breaker, the new state, and the reachable tiles from that state
+                        # 2 multiplied to h to give the heuristic more weight
+                        heapq.heappush(openHeap, (g + 2 * h, counter, nextKey, nextReach))
 
         return None  # No solution found
 
